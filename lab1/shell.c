@@ -17,9 +17,11 @@ int is_pos(char *str){
 
 void changedir(char *str){
     char cwd[MAX_INPUT], dir[MAX_INPUT];
-    if(strlen(str) > 3){
-        memmove(str, str+3, strlen(str));
+    if(strlen(str) < 5){
+        chdir(getenv("HOME"));
+        return;
     }
+    memmove(str, str+3, strlen(str));
     str[strcspn(str, "\n")] = 0;
     getcwd(cwd,MAX_INPUT);
     snprintf(dir,MAX_INPUT,"%s/%s",cwd,str);
