@@ -23,9 +23,15 @@ void changedir(char *str){
     }
     memmove(str, str+3, strlen(str));
     str[strcspn(str, "\n")] = 0;
-    getcwd(cwd,MAX_INPUT);
-    snprintf(dir,MAX_INPUT,"%s/%s",cwd,str);
-    chdir(dir);
+    if(str[0] == '/'){
+        strcpy(dir,str);
+    } else {
+        getcwd(cwd,MAX_INPUT);
+        snprintf(dir,MAX_INPUT,"%s/%s",cwd,str);
+    }
+    if(chdir(dir)==-1){
+        fprintf(stderr, "cd: no such file or directory: %s\n", str);
+    };
 }
 
 void cmd(char *command){
