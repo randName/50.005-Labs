@@ -56,19 +56,19 @@ void main(){//start main
         //printf("%d\tcommand %s\n",is_pos(command),command);
  
         i = is_pos(command);
-        if(curhis != -1 && ((strncmp(command,"!!",2)==0)||(i!=-1 && i<curhis))){
-            if (i == -1){ i = curhis-1; }
+        if(curhis != -1 && ((strncmp(command,"!!",2)==0)||(i!=-1 && i<=curhis))){
+            if (i == -1){ i = curhis; }
             strcpy(command, history[i%HISTSIZE]);
             printf("%s", command);
             cmd(command);
         } else {
             //check if user enters history option
             if(strncmp(command,"history",7) == 0){
-                for(i=(curhis<100?0:(curhis-100));i<curhis;i++){
+                for(i=(curhis<100?0:(curhis-100));i<=curhis;i++){
                     printf("%4d\t%s",i,history[i%HISTSIZE]);
                 }
             } else {
-                strcpy(history[(curhis++)%HISTSIZE], command);
+                strcpy(history[(++curhis)%HISTSIZE], command);
                 cmd(command);
             }            
         }
