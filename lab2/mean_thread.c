@@ -11,24 +11,53 @@ int array[SIZE] = {};
 
 double globalMean = 0.0;                 /* final mean value for the whole array*/
 
+int ca = 0;
+int *num_threads;
+double *temp_array = 0;
+struct sub_array { int *array; int size; };
+
 int main (int argc, const char * argv[])
 {
-    // TODO: read data from external file and store it in an array
-    // Note: you should pass the file as a first command line argument at runtime.
+    if (argc < 3) {
+        printf("usage: %s filename num_threads", argv[0]);
+        return 1;
+    }
+
+    FILE *file; file = fopen(argv[1], "r");
+
+    if (file == 0) {
+        printf("Error: Could not open file %s\n", argv[1]);
+        return 1;
+    }
 
     // define number of threads
     int number_of_threads = atoi(argv[2]);
 
-    // TODO: partition the array list into N sub-arrays, where N is the number of threads
+    if (number_of_threads < 1) {
+        printf("Error: thread count invalid\n");
+        return 1;
+    }
 
-    // TODO: create a list of threads using pthread_t that computes temporal means. E.g.,
+    num_threads = &number_of_threads;
+    temp_array = malloc(sizeof(double)*number_of_threads);
+
+    int num_nums = 0;
+    while (fscanf(file, "%d", &array[num_nums]) == 1){ num_nums++; };
+
+    int skipn = num_nums / number_of_threads;
+    int lastn = num_nums % skipn;
+    struct sub_array sub_arrays[number_of_threads];
+    for(int i = 0; i < number_of_threads; i++) {
+        sub_arrays[i].array = array+i*skipn;
+        sub_arrays[i].size = (i == number_of_threads-1 && lastn) ? lastn : skipn;
+    }
+
     pthread_t workers[number_of_threads];
 
     // TODO: start recording time
 
-    // TODO: start threads by passing the sub-array they need to process and the function they execute
     for (int i = 0; i < number_of_threads; i++) {
-        pthread_create(&workers[i], NULL, get_temporal_mean, sub-array[i]);
+        pthread_create(&workers[i], NULL, get_temporal_mean, &sub_arrays[i]);
     }
 
     /* now wait for the threads to finish */
@@ -36,33 +65,38 @@ int main (int argc, const char * argv[])
         pthread_join(workers[i], NULL);
     }
 
-    // TODO: printout temporal mean values computed by each thread
+    for (int i = 0; i < number_of_threads; i++) {
+        printf("Mean %2d: %.2f\n", i, temp_array[i]);
+    }
 
-    // TODO: establish the final mean computing thread
     pthread_t findMean;
 
-    pthread_create(&findMean, NULL, get_global_mean, data1);
+    pthread_create(&findMean, NULL, get_global_mean, temp_array);
 
     // wait for the final mean computing thread to finish
     pthread_join(findMean, NULL);
 
     // TODO: stop recording time and compute the elapsed time
 
-    // TODO: printout the global mean value
+    printf("Global Mean: %.2f\n", globalMean);
 
     // TODO: printout the execution time
 
     return 0;
 }
 
-//TODO: get temporal mean values of the sub arrays
 void *get_temporal_mean(void *params) {
-    // TODO: compute temporal mean values for each sub array of the original array with N threads
-
-    // TODO: store the temporal mean values to another array, e.g., temp_array[]
+    struct sub_array *sub_arr = params;
+    long sum = 0;
+    for (int i = 0; i < sub_arr->size; i++) {
+        sum += sub_arr->array[i];
+    }
+    temp_array[ca++] = (double)sum/sub_arr->size;
 }
 
-//TODO: get global mean value
 void *get_global_mean(void *params) {
-    //TODO: compute the global mean from the temp_array[]
+    for (int i = 0; i < *num_threads; i++) {
+        globalMean += *((double*)params+i);
+    }
+    globalMean /= (*num_threads);
 }
