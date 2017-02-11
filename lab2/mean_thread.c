@@ -54,7 +54,7 @@ int main (int argc, const char * argv[])
 
     pthread_t workers[number_of_threads];
 
-    // TODO: start recording time
+    clock_t start = clock();
 
     for (int i = 0; i < number_of_threads; i++) {
         pthread_create(&workers[i], NULL, get_temporal_mean, &sub_arrays[i]);
@@ -65,10 +65,6 @@ int main (int argc, const char * argv[])
         pthread_join(workers[i], NULL);
     }
 
-    for (int i = 0; i < number_of_threads; i++) {
-        printf("Mean %2d: %.2f\n", i, temp_array[i]);
-    }
-
     pthread_t findMean;
 
     pthread_create(&findMean, NULL, get_global_mean, temp_array);
@@ -76,11 +72,16 @@ int main (int argc, const char * argv[])
     // wait for the final mean computing thread to finish
     pthread_join(findMean, NULL);
 
-    // TODO: stop recording time and compute the elapsed time
+    clock_t end = clock();
+    double duration = (long double)(end-start)/CLOCKS_PER_SEC;
+
+    for (int i = 0; i < number_of_threads; i++) {
+        printf("Mean %2d: %.2f\n", i, temp_array[i]);
+    }
 
     printf("Global Mean: %.2f\n", globalMean);
 
-    // TODO: printout the execution time
+    printf("Took %g seconds", duration);
 
     return 0;
 }
