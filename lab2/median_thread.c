@@ -16,25 +16,48 @@ int array[SIZE] = {};
 
 double median = 0.0;
 
+int num_nums = 0;
+int *num_threads;
+struct sub_array { int *array; int size; };
+int sorted_array[SIZE] = {};
+
 int main (int argc, const char * argv[])
 {
-    // TODO: read data from external file and store it in an array
-    // Note: you should pass the file as a first command line argument at runtime.
+    if (argc < 3) {
+        printf("usage: %s filename num_threads", argv[0]);
+        return 1;
+    }
+
+    FILE *file; file = fopen(argv[1], "r");
+    if (file == 0) {
+        printf("Error: Could not open file %s\n", argv[1]);
+        return 1;
+    }
+    while (fscanf(file, "%d", &array[num_nums]) == 1){ num_nums++; };
 
     // define number of threads
     int number_of_threads = atoi(argv[2]);
+    if (number_of_threads < 1) {
+        printf("Error: thread count invalid\n");
+        return 1;
+    }
 
-    // TODO: partition the array list into N sub-arrays, where N is the number of threads
+    num_threads = &number_of_threads;
 
+    int skipn = num_nums / number_of_threads;
+    int lastn = num_nums % skipn;
+    struct sub_array sub_arrays[number_of_threads];
+    for(int i = 0; i < number_of_threads; i++) {
+        sub_arrays[i].array = array+i*skipn;
+        sub_arrays[i].size = (i == number_of_threads-1 && lastn) ? lastn : skipn;
+    }
 
-    // TODO: create a list of threads using pthread_t that sorts sub-arrays.  E.g.,
     pthread_t workers[number_of_threads];
 
-    // TODO: start recording time
+    clock_t start = clock();
 
-    // TODO: start threads by passing the sub-array they need to sort and the function they execute
     for (int i = 0; i < number_of_threads; i++) {
-        pthread_create(&workers[i], NULL, sorter, sub-array[i]);
+        pthread_create(&workers[i], NULL, sorter, &sub_arrays[i]);
     }
 
     /* now wait for the threads to finish */
@@ -42,46 +65,76 @@ int main (int argc, const char * argv[])
         pthread_join(workers[i], NULL);
     }
 
-    // TODO: establish the merger thread
     pthread_t merging_thread;
 
-    pthread_create(&merging_thread, NULL, merger, data1);
+    pthread_create(&merging_thread, NULL, merger, sub_arrays);
 
-    // wait for the final mean computing thread to finish
+    // wait for the merger thread to finish
     pthread_join(merging_thread, NULL);
 
-    // TODO: establish the median computing thread
     pthread_t median_thread;
 
-    pthread_create(&median_thread, NULL, find_median, data2);
+    pthread_create(&median_thread, NULL, find_median, sorted_array);
 
     // wait for the median computing thread to finish
-    pthread_join(merging_thread, NULL);
+    pthread_join(median_thread, NULL);
 
-
-    // TODO: stop recording time and compute the elapsed time
+    clock_t end = clock();
+    double duration = (long double)(end-start)/CLOCKS_PER_SEC;
 
     // TODO: printout the final sorted array
 
-    // TODO: printout median
+    printf("Median: %.2f\n", median);
+
+    printf("Took %g seconds", duration);
 
     return 0;
 }
 
+int cmpfunc (const void * a, const void * b)
+{
+   return *(int*)a - *(int*)b;
+}
 
-// You can use any sorting algorithm
 void *sorter(void *params) {
+    struct sub_array *sub_arr = params;
+    qsort(sub_arr->array, sub_arr->size, sizeof(int), cmpfunc);
 
     pthread_exit(NULL);
 }
 
 // You can use any merging algorithm
 void *merger(void *params) {
+    struct sub_array *arrs = params;
+    int n, i, j, k, t = 0;
+    for (n = 0; n < arrs->size; n++) {
+        sorted_array[n] = arrs->array[n];
+    }
 
+    for (n = 0; n < *num_threads-1; n++) {
+        t += (arrs+n)->size;
+        i = t - 1;
+        j = (arrs+n+1)->size - 1;
+        k = i + j + 1;
+        while(j >= 0 && k >= 0){
+            if(sorted_array[i] >= (arrs+n+1)->array[j]){
+                sorted_array[k--] = sorted_array[i--];
+            }
+            else{
+                sorted_array[k--] = (arrs+n+1)->array[j--];
+            }
+        }
+    }
     pthread_exit(NULL);
 }
 
 void *find_median(void *params) {
+    int *arr = params;
+    if (num_nums % 2) {
+        median = arr[num_nums/2];
+    } else {
+        median = (arr[num_nums/2] + arr[num_nums/2+1])/2;
+    }
 
     pthread_exit(NULL);
 }
