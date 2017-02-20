@@ -106,24 +106,21 @@ void *sorter(void *params) {
 // You can use any merging algorithm
 void *merger(void *params) {
     struct sub_array *arrs = params;
-    int n, i, j, k, t = 0;
-    for (n = 0; n < arrs->size; n++) {
-        sorted_array[n] = arrs->array[n];
-    }
+    int n, i, idx[*num_threads];
+    int min = arrs->array[0], min_n = 0;
 
-    for (n = 0; n < *num_threads-1; n++) {
-        t += (arrs+n)->size;
-        i = t - 1;
-        j = (arrs+n+1)->size - 1;
-        k = i + j + 1;
-        while(j >= 0 && k >= 0){
-            if(sorted_array[i] >= (arrs+n+1)->array[j]){
-                sorted_array[k--] = sorted_array[i--];
-            }
-            else{
-                sorted_array[k--] = (arrs+n+1)->array[j--];
+    for (n = 0; n < *num_threads; n++) { idx[n] = 0; }
+    for (i = 0; i < SIZE; i++) {
+        for (n = 0; n < *num_threads; n++) {
+            if ( idx[n] < (arrs+n)->size && (arrs+n)->array[idx[n]] <= min )
+            {
+                min = (arrs+n)->array[idx[n]];
+                min_n = n;
             }
         }
+        sorted_array[i] = min;
+        min = (arrs+min_n)->array[idx[min_n]+1];
+        idx[min_n]++;
     }
     pthread_exit(NULL);
 }
