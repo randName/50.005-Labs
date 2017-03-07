@@ -12,58 +12,59 @@ int need[10][10];
 
 
 void initBank(int resources[], int resourcesNumber, int customerNumber) {
-	// set numberOfCustomers and numberOfResources
 	numberOfCustomers = customerNumber;
 	numberOfResources = resourcesNumber;
 
-	// init available/maximum/allocation/need
-	for(int i = 0; i < resourcesNumber; i++){
+	for (int i = 0; i < resourcesNumber; i++) {
 		available[i] = resources[i];
 	}
 }
 
 
 void showState() {
-	// print the current state with a tidy format
-	printf("\nCurrent state: \n");
-	printf("Available: \n");
-	for (int i = 0; i < numberOfResources; i++) {
-		printf("%d ", available[i]);
+    int i, j;
+	printf("\nCurrent state:\n\n");
+
+	printf("Available:\n");
+	for (i = 0; i < numberOfResources; i++) {
+		printf("  %c: %d\n", i+65, available[i]);
 	}
 	printf("\n");
-	printf("\nmaximum: \n");
-	for (int i = 0; i < numberOfCustomers; i++) {
-		for(int j = 0; j < numberOfResources; j++) {
-			printf("%d ", maximum[i][j]);
-		}
+
+	printf("\nMaximum:\n\t");
+    for (i = 0; i < numberOfResources; i++) printf("%c ", i+65);
+    printf("\n");
+	for (i = 0; i < numberOfCustomers; i++) {
+        printf("%d\t", i);
+		for (j = 0; j < numberOfResources; j++) printf("%d ", maximum[i][j]);
 		printf("\n");		
 	}
-	printf("\nAllocation: \n");
-	for (int i = 0; i < numberOfCustomers; i++) {
-		for(int j = 0; j < numberOfResources; j++) {
-			printf("%d ", allocation[i][j]);
-		}
+
+	printf("\nAllocation:\n\t");
+    for (i = 0; i < numberOfResources; i++) printf("%c ", i+65);
+    printf("\n");
+	for (i = 0; i < numberOfCustomers; i++) {
+        printf("%d\t", i);
+		for (j = 0; j < numberOfResources; j++) printf("%d ", allocation[i][j]);
 		printf("\n");		
 	}
 	
-	printf("\nNeed: \n");
-	for (int i = 0; i < numberOfCustomers; i++) {
-		for(int j = 0; j < numberOfResources; j++) {
-			printf("%d ", need[i][j]);
-		}
+	printf("\nNeed:\n\t");
+    for (i = 0; i < numberOfResources; i++) printf("%c ", i+65);
+    printf("\n");
+	for (i = 0; i < numberOfCustomers; i++) {
+        printf("%d\t", i);
+		for (j = 0; j < numberOfResources; j++) printf("%d ", need[i][j]);
 		printf("\n");		
-	}	
+	}
 	printf("\n");
 }
 
 
 int addCustomer(int customerId, int maximumDemand[]) {
-	// add customer, update maximum and need
-	if(customerId >= numberOfCustomers || customerId < 0){
-		return -1;
-	}
+	if(customerId >= numberOfCustomers || customerId < 0) return 1;
 
-	for (int i = 0; i < numberOfResources; i++){
+	for (int i = 0; i < numberOfResources; i++) {
 		maximum[customerId][i] = maximumDemand[i];
 		need[customerId][i] = maximumDemand[i];
 	}
@@ -72,94 +73,65 @@ int addCustomer(int customerId, int maximumDemand[]) {
 
 
 int checkSafe(int customerId, int request[]) {
-	// check if the new state is safe
-	int temp_avail[10];
-	int temp_need[10][10];
-	int temp_allocation[10][10];
-	int work[10];
+	int temp_need[10][10], temp_alloc[10][10];
+	int i, j, work[10];
 	bool finish[10];
-	bool possible = true;
+	bool done = false;
+    bool feasible = true;
 
-	for(int j = 0; j < numberOfResources; j++){
-		temp_avail[j] = available[j] - request[j];
-		work[j] = temp_avail[j];
-		for(int i = 0; i < numberOfCustomers; i++){
-			if (i == customerId){
-				temp_need[customerId][j] = need[customerId][j] - request[j];
-				temp_allocation[customerId][j] = allocation[customerId][j] + request[j];
-			}
-			else{
-				temp_need[i][j] = need[i][j];
-				temp_allocation[i][j] = allocation[i][j];
-			}
+	for (j = 0; j < numberOfResources; j++) {
+		work[j] = available[j] - request[j];
+		for (i = 0; i < numberOfCustomers; i++) {
+            temp_need[i][j] = need[i][j];
+            temp_alloc[i][j] = allocation[i][j];
 		}
+        temp_need[customerId][j] -= request[j];
+        temp_alloc[customerId][j] += request[j];
 	}
 
-	for (int i = 0; i < numberOfCustomers; i++){
-		finish[i] = false;
-	}
+	for (i = 0; i < numberOfCustomers; i++) finish[i] = false;
 
-	while(possible){
-		possible = false;
-		for (int i = 0; i < numberOfCustomers; i++){
-			bool feasible = true;
-			for(int j = 0; j < numberOfResources; j++){
-				if(temp_need[i][j] > work[j]){
-					feasible = false;
-				}
+	while (!done) {
+		done = true;
+		for (i = 0; i < numberOfCustomers; i++) {
+			feasible = true;
+			for (j = 0; j < numberOfResources; j++) {
+				if (temp_need[i][j] > work[j]) feasible = false;
 			}
-			if(finish[i] == 0 && feasible){
-				possible = true;
-				for(int j = 0; j < numberOfResources; j++){
-					work[j] += temp_allocation[i][j];
-				}
+			if (!finish[i] && feasible) {
+                done = false;
 				finish[i] = true;
+				for (j = 0; j < numberOfResources; j++) work[j] += temp_alloc[i][j];
 			}
 		}
 	}
-	int safe = 0;
-	for (int i = 0; i < numberOfCustomers; i++){
-		if(!finish[i]){
-			safe = -1;
-		}
+
+	for (i = 0; i < numberOfCustomers; i++){
+		if (!finish[i]) return -1;
 	}
-	return safe;
+	return 0;
 }
 
 int requestResources(int customerId, int request[]) {
+    int i;
 
-	// deal with new request resources
-	printf("\nRequest resource, customerId %d: [", customerId);
-	for(int i = 0; i < numberOfResources-1; i++) {
-		printf("%d, ", request[i]);
-	}
-	printf("%d]\n",request[numberOfResources-1]);
-
-	// judge if request larger than need
-	for(int i = 0; i < numberOfResources; i++){
-		if(request[i] > need[customerId][i]){
-			printf("Request from customer %d exceeds the need for resource %d!\n", customerId, i);
+	printf("\nRequest from customerId %d\n", customerId);
+	for (i = 0; i < numberOfResources; i++) {
+		printf("  %c: %d\n", i+65, request[i]);
+		if (request[i] > need[customerId][i] || request[i] > available[i]) {
+			printf("  -- Request for resource is too much!\n");
 			return -1;
-		}
-	}
+        }
+    }
 
-	// judge if request larger than avaliable
-	for(int i = 0; i < numberOfResources; i++){
-		if(request[i] > available[i]){
-			printf("Request from customer %d is more than avaliable for resource %d!\n", customerId, i);
-			return -1;
-		}
-	}
-
-	// judge if the new state is safe if grants this request (for question 2)
-	if (checkSafe(customerId, request) == -1){
-		printf("Request may cause the system unsafe. Rejected.\n");
+	if (checkSafe(customerId, request) != 0) {
+		printf("Request is unsafe. Rejected.\n");
 		return -1;
-	}
+    }
 
-	// request is granted, update state
 	printf("Request granted.\n");
-	for(int i = 0; i < numberOfResources; i++){
+
+	for (i = 0; i < numberOfResources; i++){
 		available[i] -= request[i];
 		allocation[customerId][i] += request[i];
 		need[customerId][i] -= request[i];
@@ -169,14 +141,9 @@ int requestResources(int customerId, int request[]) {
 
 
 int releaseResources(int customerId, int release[]) {
-	// deal with release (:For simplicity, we do not judge the release request, just update directly)
-	printf("\nRelease resource, customerId %d: [", customerId);
-	for(int i = 0; i < numberOfResources-1; i++) {
-		printf("%d, ", release[i]);
-	}
-	printf("%d]\n",release[numberOfResources-1]);
-
-	for (int i = 0; i < numberOfResources; i++){
+	printf("\nRelease resources for customerId %d\n", customerId);
+	for (int i = 0; i < numberOfResources; i++) {
+		printf("  %c: %d\n", i+65, release[i]);
 		available[i] += release[i];
 		allocation[customerId][i] -= release[i];
 		need[customerId][i] += release[i];
