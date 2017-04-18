@@ -39,13 +39,15 @@ public class Server {
 
             // authentication challenge
             in.read(challenge);
-            System.out.print("Received challenge: ");
-            CP.printBytes(challenge);
+            //System.out.print("Received challenge: ");
+            //AP.ppbytes(challenge);
             out.write(ap.respond(challenge));
 
             // receive file
-            String fn = cp.receive(in);
-            System.out.println("Received file: " + fn);
+            String fn = cp.init(in);
+            System.out.print("Receiving " + fn + " ...");
+            cp.transfer(new FileOutputStream("xfer_"+fn));
+            System.out.println(" OK");
 
             // cleanup
             in.close();

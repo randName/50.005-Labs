@@ -4,7 +4,6 @@ import java.io.*;
 import javax.crypto.*;
 import java.security.*;
 import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 public class CP2 extends CP {
     private static Cipher s;
@@ -23,37 +22,24 @@ public class CP2 extends CP {
         s = Cipher.getInstance("AES/ECB/PKCS5Padding");
     }
 
-    public void send(String fn, OutputStream out) throws Exception {
+    public void init(OutputStream outs, String fn) throws Exception {
         SecretKey sk = KeyGenerator.getInstance("AES").generateKey();
         byte[] keyb = c.doFinal(sk.getEncoded());
-        out.write(keyb, 0, keyb.length);
-        out.flush();
-
+        outs.write(keyb, 0, keyb.length);
+        outs.flush();
         s.init(Cipher.ENCRYPT_MODE, sk);
-        BufferedWriter cout = createWriter(new CipherOutputStream(out, s));
-        cout.write(fn, 0, fn.length());
-        cout.write('\n');
-        cout.flush();
-
-        BufferedReader fin = createReader(new FileInputStream(fn));
-        bufferedXfer(fin, cout);
-        fin.close();
-        cout.close();
+        super.init(outs, fn);
     }
 
-    public String receive(InputStream in) throws Exception {
+    public String init(InputStream ins) throws Exception {
         byte[] keyb = new byte[128];
-        in.read(keyb);
+        ins.read(keyb);
         SecretKey sk = new SecretKeySpec(c.doFinal(keyb), "AES");
-
         s.init(Cipher.DECRYPT_MODE, sk);
-        BufferedReader cin = createReader(new CipherInputStream(in, s));
-        String fn = cin.readLine();
+        return super.init(ins);
+    }
 
-        BufferedWriter fout = createWriter(new FileOutputStream(fn));
-        bufferedXfer(cin, fout);
-        fout.close();
-        cin.close();
-        return fn;
+    private byte[] process(byte[] data) throws Exception {
+        return s.doFinal(data);
     }
 }

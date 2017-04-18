@@ -3,13 +3,21 @@ package SecStore;
 import java.io.*;
 import javax.crypto.*;
 import java.security.*;
+import java.util.Arrays;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 public class CP {
+    private int count;
+    private byte[] enc;
+    protected String data;
+    protected byte[] buffer;
     protected static Cipher c;
+    protected static PrintWriter out;
+    protected static BufferedReader in;
 
     public CP() throws Exception {
+        buffer = new byte[8192];
         c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
     }
 
@@ -23,29 +31,40 @@ public class CP {
         c.init(Cipher.ENCRYPT_MODE, pk);
     }
 
-    public static BufferedReader createReader(InputStream in) {
-        return new BufferedReader(new InputStreamReader(in));
+    public void init(OutputStream outs, String fn) throws Exception {
+        out = new PrintWriter(outs);
+        out.println(DatatypeConverter.printBase64Binary(c.doFinal(fn.getBytes())));
+        out.flush();
     }
 
-    public static BufferedWriter createWriter(OutputStream out) {
-        return new BufferedWriter(new OutputStreamWriter(out));
+    public String init(InputStream ins) throws Exception {
+        in = new BufferedReader(new InputStreamReader(ins));
+        return new String(c.doFinal(
+            DatatypeConverter.parseBase64Binary(in.readLine())));
     }
 
-    public static void bufferedXfer(BufferedReader in, BufferedWriter out) throws Exception {
-        int count;
-        char[] buffer = new char[1024];
-        while ((count = in.read(buffer, 0, 1024)) > 0) out.write(buffer, 0, count);
+    public void transfer(FileInputStream fin) throws Exception {
+        while ((count = fin.read(buffer)) > 0) {
+            if ( count < buffer.length ) {
+                enc = process(Arrays.copyOf(buffer, count));
+            } else {
+                enc = process(buffer);
+            }
+            data = DatatypeConverter.printBase64Binary(enc);
+            out.println(data);
+            out.flush();
+        }
+        fin.close();
     }
 
-    public static void printBytes(byte[] data) {
-        for ( byte i = 0; i < data.length; i++ ) System.out.printf("%02X ", data[i]);
-        System.out.println();
+    public void transfer(FileOutputStream fout) throws Exception {
+        while ((data = in.readLine()) != null) {
+            fout.write(process(DatatypeConverter.parseBase64Binary(data)));
+        }
+        fout.close();
     }
 
-    public void send(String fn, OutputStream out) throws Exception {
-    }
-
-    public String receive(InputStream in) throws Exception {
-        return "";
+    private byte[] process(byte[] data) {
+        return data;
     }
 }

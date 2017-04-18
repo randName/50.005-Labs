@@ -20,11 +20,11 @@ public class Client {
         System.out.println("OK");
 
         // receive signed certificate
-        System.out.print("Authenticating Server... ");
         AP ap = new AP(in);
+        //System.out.print("Challenge: ");
+        //AP.ppbytes(ap.getChallenge());
+        System.out.print("Authenticating Server... ");
         out.write(ap.getChallenge());
-        //System.out.print("Sent challenge: ");
-        //CP.printBytes(ap.getChallenge());
 
         // check with certificate
         if ( ! ap.verify(in) ) {
@@ -35,10 +35,13 @@ public class Client {
         }
 
         // send file
-        System.out.print("Sending file... ");
+        System.out.print("Sending file...");
         CP cp = new CP2(ap.getPublicKey());
-        cp.send(fileName, out);
-        System.out.println("OK");
+        cp.init(out, fileName);
+        long startTime = System.currentTimeMillis();
+        cp.transfer(new FileInputStream(fileName));
+        long endTime = System.currentTimeMillis();
+        System.out.println(" OK. Time taken: " + (endTime - startTime) + "ms");
 
         // cleanup
         in.close();

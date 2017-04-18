@@ -75,4 +75,9 @@ public class AP {
     public byte[] getChallenge() {
         return challenge;
     }
+
+    public static void ppbytes(byte[] data) {
+        for ( byte b : data ) System.out.printf("%02X ", b);
+        System.out.println();
+    }
 }
