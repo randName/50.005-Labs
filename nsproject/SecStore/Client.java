@@ -4,11 +4,10 @@ import java.io.*;
 import java.net.*;
 
 public class Client {
-    private static Socket conn;
-    private static InputStream in;
-    private static OutputStream out;
-    protected static AP ap;
-    protected static CP cp;
+    protected Socket conn;
+    protected InputStream in;
+    protected OutputStream out;
+    protected AP ap;
 
     public static void main(String args[]) throws Exception {
         String hostName = args[0];
@@ -16,20 +15,12 @@ public class Client {
         int portNumber = Integer.parseInt(args[1]);
 
         System.out.print("Connecting to Server... ");
-        conn = new Socket(hostName, portNumber);
-        out = conn.getOutputStream();
-        in = conn.getInputStream();
+        Client client = new Client();
+        client.connect(hostName, portNumber);
         System.out.println("OK");
 
-        // receive signed certificate
-        ap = new AP(in);
-        //System.out.print("Challenge: ");
-        //AP.ppbytes(ap.getChallenge());
         System.out.print("Authenticating Server... ");
-        out.write(ap.getChallenge());
-
-        // check with certificate
-        if ( ! ap.verify(in) ) {
+        if( ! client.authenticate() ) {
             System.out.println("Response invalid! Spoopy!");
             return;
         } else {
@@ -38,19 +29,40 @@ public class Client {
 
         // send file
         System.out.print("Sending file...");
-        cp.init(out, fileName);
         long startTime = System.currentTimeMillis();
-        cp.transfer(new FileInputStream(fileName));
+        client.initCP();
+        client.send(fileName);
         long endTime = System.currentTimeMillis();
         System.out.println(" OK. Time taken: " + (endTime - startTime) + "ms");
 
-        // cleanup
+        client.close();
+    }
+
+    public void connect(String hostName, int portNumber) throws Exception {
+        conn = new Socket(hostName, portNumber);
+        out = conn.getOutputStream();
+        in = conn.getInputStream();
+    }
+
+    public void close() throws Exception {
         in.close();
         out.close();
         conn.close();
     }
 
-    private static void initCP() throws Exception {
-        cp = new CP(ap.getPublicKey());
+    public boolean authenticate() throws Exception {
+        // receive signed certificate
+        ap = new AP(in);
+        out.write(ap.getChallenge());
+        //System.out.print("Challenge: ");
+        //AP.ppbytes(ap.getChallenge());
+        // check with certificate
+        return ap.verify(in);
+    }
+
+    public void initCP() throws Exception {
+    }
+
+    public void send(String fileName) throws Exception {
     }
 }

@@ -12,23 +12,26 @@ public class CP {
     private byte[] enc;
     protected String data;
     protected byte[] buffer;
-    protected static Cipher c;
-    protected static PrintWriter out;
-    protected static BufferedReader in;
+    protected Cipher c;
+    protected PrintWriter out;
+    protected BufferedReader in;
 
-    public CP() throws Exception {
-        buffer = new byte[8192];
+    public CP(PrivateKey privatek, PublicKey publick) throws Exception {
         c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        if ( privatek != null ) {
+            c.init(Cipher.DECRYPT_MODE, privatek);
+        } else if ( publick != null ) {
+            c.init(Cipher.ENCRYPT_MODE, publick);
+        }
+        buffer = new byte[8192];
     }
 
     public CP(PrivateKey pk) throws Exception {
-        this();
-        c.init(Cipher.DECRYPT_MODE, pk);
+        this(pk, null);
     }
 
     public CP(PublicKey pk) throws Exception {
-        this();
-        c.init(Cipher.ENCRYPT_MODE, pk);
+        this(null, pk);
     }
 
     public void init(OutputStream outs, String fn) throws Exception {
@@ -53,6 +56,7 @@ public class CP {
             data = DatatypeConverter.printBase64Binary(enc);
             out.println(data);
             out.flush();
+            //System.out.print(".");
         }
         fin.close();
     }
@@ -60,11 +64,12 @@ public class CP {
     public void transfer(FileOutputStream fout) throws Exception {
         while ((data = in.readLine()) != null) {
             fout.write(process(DatatypeConverter.parseBase64Binary(data)));
+            //System.out.print(".");
         }
         fout.close();
     }
 
-    private byte[] process(byte[] data) {
+    public byte[] process(byte[] data) throws Exception {
         return data;
     }
 }

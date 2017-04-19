@@ -5,21 +5,21 @@ import java.security.*;
 
 public class CP1 extends CP {
 
-    public CP1() throws Exception {
-        super();
+    public CP1(PrivateKey privatek, PublicKey publick) throws Exception {
+        super(privatek, publick);
+        buffer = new byte[117];
     }
 
     public CP1(PrivateKey pk) throws Exception {
-        super(pk);
-        buffer = new byte[128];
+        this(pk, null);
     }
 
     public CP1(PublicKey pk) throws Exception {
-        super(pk);
-        buffer = new byte[128];
+        this(null, pk);
     }
 
-    private byte[] process(byte[] data) throws Exception {
+    @Override
+    public byte[] process(byte[] data) throws Exception {
         return c.doFinal(data);
     }
 }

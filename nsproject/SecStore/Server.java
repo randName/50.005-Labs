@@ -5,33 +5,48 @@ import java.net.*;
 import java.util.concurrent.*;
 
 public class Server {
-    private static final Executor exec = Executors.newFixedThreadPool(10);
-    protected static CP cp;
-    protected static AP ap;
-    
+    protected static final Executor exec = Executors.newFixedThreadPool(10);
+    protected ServerSocket socket;
+    protected AP ap;
+
     public static void main(String[] args) throws Exception {
         int portNumber = Integer.parseInt(args[2]);
 
         InputStream pkfile = new FileInputStream(args[0]);
         InputStream certfile = new FileInputStream(args[1]);
         System.out.print("Starting server...");
-        ap = new AP(certfile, pkfile);
-        initCP();
-        ServerSocket socket = new ServerSocket(portNumber);
+        Server server = new Server();
+        server.initAP(pkfile, certfile);
+        server.initCP();
+        server.start(portNumber);
         System.out.println(" OK");
         while (true) {
-            final Socket connection = socket.accept();
+            final Socket connection = server.getSocket();
             exec.execute(new Runnable() {
-                public void run() { handleRequest(connection); }
+                public void run() { server.handleRequest(connection); }
             });
         }
     }
 
-    private static void initCP() throws Exception {
-        cp = new CP(ap.getPrivateKey());
+    public void start(int portNumber) throws Exception {
+        socket = new ServerSocket(portNumber);
     }
 
-    private static void handleRequest(Socket conn) {
+    public Socket getSocket() throws Exception {
+        return socket.accept();
+    }
+
+    public void initAP(InputStream pkfile, InputStream certfile) throws Exception {
+        ap = new AP(certfile, pkfile);
+    }
+
+    public void initCP() throws Exception {
+    }
+
+    public void transfer(InputStream in) throws Exception {
+    }
+
+    protected void handleRequest(Socket conn) {
         final byte[] challenge = new byte[16];
 
         try {
@@ -48,10 +63,7 @@ public class Server {
             out.write(ap.respond(challenge));
 
             // receive file
-            String fn = cp.init(in);
-            System.out.print("Receiving " + fn + " ...");
-            cp.transfer(new FileOutputStream(fn));
-            System.out.println(" OK");
+            this.transfer(in);
 
             // cleanup
             in.close();
