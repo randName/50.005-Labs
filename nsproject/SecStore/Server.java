@@ -6,25 +6,29 @@ import java.util.concurrent.*;
 
 public class Server {
     private static final Executor exec = Executors.newFixedThreadPool(10);
-    private static CP cp;
-    private static AP ap;
+    protected static CP cp;
+    protected static AP ap;
     
     public static void main(String[] args) throws Exception {
-        int portNumber = Integer.parseInt(args[0]);
+        int portNumber = Integer.parseInt(args[2]);
 
-        InputStream certfile = new FileInputStream("1001557.cer");
-        InputStream pkfile = new FileInputStream("privateServer.der");
+        InputStream pkfile = new FileInputStream(args[0]);
+        InputStream certfile = new FileInputStream(args[1]);
+        System.out.print("Starting server...");
         ap = new AP(certfile, pkfile);
-        cp = new CP2(ap.getPrivateKey());
-
+        initCP();
         ServerSocket socket = new ServerSocket(portNumber);
-        System.out.println("Server started.");
+        System.out.println(" OK");
         while (true) {
-            Socket connection = socket.accept();
+            final Socket connection = socket.accept();
             exec.execute(new Runnable() {
                 public void run() { handleRequest(connection); }
             });
         }
+    }
+
+    private static void initCP() throws Exception {
+        cp = new CP(ap.getPrivateKey());
     }
 
     private static void handleRequest(Socket conn) {
@@ -46,7 +50,7 @@ public class Server {
             // receive file
             String fn = cp.init(in);
             System.out.print("Receiving " + fn + " ...");
-            cp.transfer(new FileOutputStream("xfer_"+fn));
+            cp.transfer(new FileOutputStream(fn));
             System.out.println(" OK");
 
             // cleanup

@@ -7,6 +7,8 @@ public class Client {
     private static Socket conn;
     private static InputStream in;
     private static OutputStream out;
+    protected static AP ap;
+    protected static CP cp;
 
     public static void main(String args[]) throws Exception {
         String hostName = args[0];
@@ -20,7 +22,7 @@ public class Client {
         System.out.println("OK");
 
         // receive signed certificate
-        AP ap = new AP(in);
+        ap = new AP(in);
         //System.out.print("Challenge: ");
         //AP.ppbytes(ap.getChallenge());
         System.out.print("Authenticating Server... ");
@@ -36,7 +38,6 @@ public class Client {
 
         // send file
         System.out.print("Sending file...");
-        CP cp = new CP2(ap.getPublicKey());
         cp.init(out, fileName);
         long startTime = System.currentTimeMillis();
         cp.transfer(new FileInputStream(fileName));
@@ -47,5 +48,9 @@ public class Client {
         in.close();
         out.close();
         conn.close();
+    }
+
+    private static void initCP() throws Exception {
+        cp = new CP(ap.getPublicKey());
     }
 }
