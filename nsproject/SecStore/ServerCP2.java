@@ -31,10 +31,9 @@ public class ServerCP2 extends Server {
     }
 
     @Override
-    public void transfer(InputStream in) throws Exception {
+    public String receive(InputStream in) throws Exception {
         String fn = cp.init(in);
-        System.out.print("Receiving " + fn + " ...");
         cp.transfer(new FileOutputStream(fn));
-        System.out.print(" OK");
+        return fn;
     }
 }

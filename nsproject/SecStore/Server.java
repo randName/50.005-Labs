@@ -8,6 +8,7 @@ public class Server {
     protected static final Executor exec = Executors.newFixedThreadPool(10);
     protected ServerSocket socket;
     protected AP ap;
+    private CP cp;
 
     public static void main(String[] args) throws Exception {
         int portNumber = Integer.parseInt(args[2]);
@@ -15,7 +16,7 @@ public class Server {
         InputStream pkfile = new FileInputStream(args[0]);
         InputStream certfile = new FileInputStream(args[1]);
         System.out.print("Starting server...");
-        Server server = new Server();
+        final Server server = new Server();
         server.initAP(pkfile, certfile);
         server.initCP();
         server.start(portNumber);
@@ -41,9 +42,13 @@ public class Server {
     }
 
     public void initCP() throws Exception {
+        cp = new CP(ap.getPrivateKey());
     }
 
-    public void transfer(InputStream in) throws Exception {
+    public String receive(InputStream in) throws Exception {
+        String fn = cp.init(in);
+        cp.transfer(new FileOutputStream(fn));
+        return fn;
     }
 
     protected void handleRequest(Socket conn) {
@@ -63,7 +68,9 @@ public class Server {
             out.write(ap.respond(challenge));
 
             // receive file
-            this.transfer(in);
+            System.out.print("Receiving file...");
+            String fn = this.receive(in);
+            System.out.println(" OK. Saved to " + fn);
 
             // cleanup
             in.close();

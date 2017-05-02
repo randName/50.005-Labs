@@ -8,6 +8,7 @@ public class Client {
     protected InputStream in;
     protected OutputStream out;
     protected AP ap;
+    private CP cp;
 
     public static void main(String args[]) throws Exception {
         String hostName = args[0];
@@ -61,8 +62,11 @@ public class Client {
     }
 
     public void initCP() throws Exception {
+        cp = new CP(ap.getPublicKey());
     }
 
     public void send(String fileName) throws Exception {
+        cp.init(out, fileName);
+        cp.transfer(new FileInputStream(fileName));
     }
 }
